@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Billing App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f3f3f3;
+            padding: 20px;
+        }
+        .form-container, .cart {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-container h2, .cart h2 {
+            text-align: center;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .cart-items {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+        }
+        .delete-btn {
+            background: red;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Billing App</h1>
+    <div class="form-container">
+        <h2>Client Information</h2>
+        <input type="text" id="clientName" placeholder="Client's Name" required>
+        <input type="date" id="billDate" required>
+    </div>
+
+    <div class="form-container">
+        <h2>Add Item</h2>
+        <select id="itemSelect" onchange="updatePrice()">
+            <option value="0" data-price="0">Select an item</option>
+            <option value="Shirt" data-price="500">Shirt - 500</option>
+            <option value="Pants" data-price="700">Pants - 700</option>
+            <option value="Jacket" data-price="1000">Jacket - 1000</option>
+        </select>
+        <input type="number" id="quantity" placeholder="Quantity" min="1" required>
+        <p id="itemPrice">Price: 0</p>
+        <button id="addItemBtn" onclick="addItem()">Add Item</button>
+    </div>
+
+    <div class="cart">
+        <h2>Cart</h2>
+        <div id="cartItems" class="cart-items"></div>
+        <p>Total: <span id="finalTotal">0</span></p>
+        <button id="saveBillBtn" onclick="saveBill()">Save Bill as JPEG</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script>
+        let cart = [];
+
+        function updatePrice() {
+            const selectedItem = document.getElementById('itemSelect');
+            const price = selectedItem.options[selectedItem.selectedIndex].dataset.price;
+            document.getElementById('itemPrice').innerText = 'Price: ' + price;
+        }
+
+        function addItem() {
+            const selectedItem = document.getElementById('itemSelect').value;
+            const quantity = document.getElementById('quantity').value;
+            const price = document.getElementById('itemSelect').selectedOptions[0].dataset.price;
+
+            if (selectedItem === "0" || !quantity) {
+                alert("Please select an item and enter a quantity.");
+                return;
+            }
+
+            const totalPrice = quantity * price;
+
+            const cartItem = {
+                name: selectedItem,
+                quantity: quantity,
+                price: totalPrice
+            };
+
+            cart.push(cartItem);
+            displayCart();
+            calculateTotal();
+        }
+
+        function displayCart() {
+            const cartItemsDiv = document.getElementById('cartItems');
+            cartItemsDiv.innerHTML = '';
+
+            cart.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    ${item.name} - Quantity: ${item.quantity} - Price: ${item.price}
+                    <button class="delete-btn" onclick="deleteItem(${index})">Delete</button>
+                `;
+                cartItemsDiv.appendChild(div);
+            });
+        }
+
+        function deleteItem(index) {
+            cart.splice(index, 1);
+            displayCart();
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            document.getElementById('finalTotal').innerText = total;
+        }
+
+        function saveBill() {
+            const billContent = document.createElement('div');
+            billContent.innerHTML = `
+                <h2>Bill</h2>
+                <p>Client: ${document.getElementById('clientName').value}</p>
+                <p>Date: ${document.getElementById('billDate').value}</p>
+                <div>${document.getElementById('cartItems').innerHTML}</div>
+                <p>Total: ${document.getElementById('finalTotal').innerText}</p>
+            `;
+
+            document.body.appendChild(billContent);
+
+            html2canvas(billContent).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'bill.jpeg';
+                link.href = canvas.toDataURL();
+                link.click();
+                document.body.removeChild(billContent);
+            });
+        }
+    </script>
+</body>
+</html>
